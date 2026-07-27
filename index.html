@@ -434,12 +434,18 @@ body{
 <div class="tab-content" id="tab-device">
 
   <div class="card">
-    <div class="slabel"><span>BATERIA</span></div>
+    <div class="slabel">
+      <span>BATERIA</span>
+      <span class="badge badge-warn">SEM CONFIRMAÇÃO</span>
+    </div>
     <div class="battery-wrap">
       <div class="battery-shell"><div class="battery-fill" id="dev-bat-fill"></div></div>
       <div class="battery-pct" id="dev-bat-pct">—</div>
     </div>
-    <button class="btn-ghost" onclick="consultarBateria()">🔋 Atualizar bateria</button>
+    <div class="card-hint" style="margin-top:6px;">
+      Testado em 27/07: o comando de bateria só volta um ACK genérico (sem número de %). O que parecia funcionar antes era um bug lendo o byte errado do pacote — corrigido. Até acharmos o comando certo, este medidor fica vazio; acompanhe o console em AVANÇADO pra ajudar a identificar o byte certo.
+    </div>
+    <button class="btn-ghost" onclick="consultarBateria()">🔋 Testar comando de bateria</button>
   </div>
 
   <div class="card">
@@ -452,7 +458,7 @@ body{
       <span class="status-val" id="dev-storage">Não consultado</span>
     </div>
     <div class="card-hint" style="margin-top:10px;">
-      O protocolo do YJ02 não tem um comando de espaço/armazenamento confirmado ainda. Este botão testa alguns opcodes candidatos e mostra a resposta crua no console (aba AVANÇADO) para você ajudar a identificar o comando certo.
+      O protocolo do YJ02 não tem um comando de espaço/armazenamento confirmado ainda. Testes mostraram que 02 01 07/08/09 provavelmente não são reconhecidos (ACK genérico); 02 01 05 se comporta diferente e é o candidato mais promissor. Este botão testa os candidatos e mostra a resposta crua no console (aba AVANÇADO) pra você ajudar a decifrar o formato.
     </div>
     <button class="btn-ghost" onclick="consultarEspaco()">📦 Tentar consultar espaço</button>
   </div>
@@ -463,7 +469,7 @@ body{
       <span class="badge badge-warn">EXPERIMENTAL</span>
     </div>
     <div class="card-hint">
-      Comando não confirmado oficialmente — pode não fazer nada, ou pode apagar arquivos dos óculos. Só use se souber o que está fazendo e, de preferência, com os arquivos já importados.
+      Comando não confirmado oficialmente — pode não fazer nada, ou pode apagar arquivos dos óculos. No teste de 27/07 o comando "02 01 04 03" pareceu reativar a transmissão das credenciais de Wi-Fi (não deu pra confirmar se limpou algo). Só use se souber o que está fazendo e, de preferência, com os arquivos já importados.
     </div>
     <button class="btn-danger btn" style="font-size:14px;padding:12px;" onclick="abrirModalLimpar()">🗑️ Tentar limpar cache</button>
   </div>
@@ -620,13 +626,17 @@ const YJ02 = {
     BATTERY:    [0x02, 0x01, 0x03],        // query bateria
   },
 
-  // Candidatos NÃO confirmados — testados via botão "experimental" na aba ÓCULOS
+  // Candidatos NÃO confirmados — testados via botão "experimental" na aba ÓCULOS.
+  // Testado em 27/07: 02 01 07 / 02 01 08 / 02 01 09 voltam todos com o mesmo ACK
+  // genérico "FF 04" — sinal forte de que não são reconhecidos pelo firmware.
+  // 02 01 05 se comporta diferente (dispara um frame BC 73 08 novo) — candidato
+  // mais promissor, mas o significado do payload ainda não está confirmado.
   EXPERIMENTAL: {
     STORAGE_TRY: [
+      [0x02, 0x01, 0x05],
       [0x02, 0x01, 0x07],
       [0x02, 0x01, 0x08],
       [0x02, 0x01, 0x09],
-      [0x02, 0x01, 0x05],
     ],
     CLEAR_CACHE_TRY: [
       [0x02, 0x01, 0x04, 0x03],
@@ -816,12 +826,6 @@ function onNotify(event) {
 
   const cmd = bytes[1];
 
-  // BC-73-08: Bateria (byte[4] = %)
-  if (cmd === 0x73 && bytes[2] === 0x08) {
-    const bat = bytes[4];
-    updateBatteryUI(bat);
-  }
-
   // BC-73-05: IP Wi-Fi dos óculos
   if (cmd === 0x73 && bytes[2] === 0x05 && bytes.length >= 11) {
     const ip = `${bytes[7]}.${bytes[8]}.${bytes[9]}.${bytes[10]}`;
@@ -831,23 +835,51 @@ function onNotify(event) {
     console.log('[FranCap] IP dos óculos:', ip);
   }
 
+  // BC-73-08: frame de 8 bytes que aparece após "02 01 05" — conteúdo ainda
+  // NÃO confirmado como bateria/armazenamento. Só logamos, sem inventar valor.
+  if (cmd === 0x73 && bytes[2] === 0x08 && bytes[3] === 0x00) {
+    const payload = bytes.slice(6);
+    logDebug('sys', 'BC 73 08 (payload não mapeado ainda): ' + bytesToHex(payload));
+  }
+
   // BC-41: Resposta a glassesControl
   if (cmd === 0x41) {
     const payload = bytes.slice(6);
-    // dataType = payload[0], glassWorkType = payload[2]
-    if (payload[0] === 1 && payload[2] === 4) {
-      const errorCode = payload[3];
-      if (errorCode === 0) {
-        showToast('✓ Wi-Fi dos óculos ativo!', 'ok');
+
+    // Broadcast de credenciais Wi-Fi: payload = 02 01 [wifiMode] 01 [ssidLen 00] [passLen 00] <ssid><pass>
+    // Confirmado em teste real: os óculos mandam isso sozinhos, às vezes antes até
+    // de mandarmos o comando de ativar Wi-Fi — por isso não dependemos mais do echo do comando.
+    if (payload[0] === 2 && payload[1] === 1 && payload.length > 8) {
+      const ssidLen = payload[4] | (payload[5] << 8);
+      const passLen = payload[6] | (payload[7] << 8);
+      if (ssidLen > 0 && ssidLen < 40 && passLen >= 0 && passLen < 40 && payload.length >= 8 + ssidLen + passLen) {
+        const raw = payload.slice(8, 8 + ssidLen + passLen);
+        const text = new TextDecoder().decode(raw);
+        const ssid = text.slice(0, ssidLen);
+        const pass = text.slice(ssidLen, ssidLen + passLen);
+        YJ02.WIFI_SSID = ssid;
+        YJ02.WIFI_PASS = pass;
+        document.getElementById('wifi-ssid').textContent = ssid;
+        document.getElementById('wifi-pass').textContent = pass;
         document.getElementById('wifi-box').style.display = 'block';
         document.getElementById('btn-fetch').style.display = 'flex';
-        showToast('Conecte ao Wi-Fi: ' + YJ02.WIFI_SSID, 'ok');
-      } else {
-        showToast('Erro nos óculos: código ' + errorCode, 'error');
+        showToast('✓ Credenciais Wi-Fi recebidas dos óculos', 'ok');
+        logDebug('sys', 'SSID/senha reais: ' + ssid + ' / ' + pass);
+      }
+    }
+    // ACK curto tipo "02 01 XX FF 04" — na prática visto para bateria (02 01 03) e
+    // para os candidatos de armazenamento (02 01 07/08/09), sempre com o mesmo
+    // sufixo FF 04. Isso indica ACK genérico, provavelmente SEM dado numérico —
+    // não é um valor de bateria/armazenamento confiável, então não inventamos um.
+    else if (payload.length === 5 && payload[3] === 0xFF && payload[4] === 0x04) {
+      logDebug('sys', 'ACK genérico p/ comando ' + bytesToHex(payload.slice(0,3)) + ' (sem dado numérico — provável não suportado ou pendente)');
+      if (payload[2] === 0x03) {
+        document.getElementById('st-bat').textContent = 'sem dado (ver console)';
+        document.getElementById('st-bat').className = 'status-val warn';
       }
     }
     // Contagem de arquivos: dataType = 4
-    if (payload[0] === 4) {
+    else if (payload[0] === 4) {
       const total = (payload[1] || 0) + (payload[2] || 0) + (payload[3] || 0);
       showToast(total + ' arquivo(s) nos óculos', 'ok');
     }
