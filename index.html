@@ -436,14 +436,14 @@ body{
   <div class="card">
     <div class="slabel">
       <span>BATERIA</span>
-      <span class="badge badge-warn">SEM CONFIRMAÇÃO</span>
+      <span class="badge badge-warn" id="bat-badge">SEM CONFIRMAÇÃO</span>
     </div>
     <div class="battery-wrap">
       <div class="battery-shell"><div class="battery-fill" id="dev-bat-fill"></div></div>
       <div class="battery-pct" id="dev-bat-pct">—</div>
     </div>
     <div class="card-hint" style="margin-top:6px;">
-      Testado em 27/07: o comando de bateria só volta um ACK genérico (sem número de %). O que parecia funcionar antes era um bug lendo o byte errado do pacote — corrigido. Até acharmos o comando certo, este medidor fica vazio; acompanhe o console em AVANÇADO pra ajudar a identificar o byte certo.
+      O app agora tenta primeiro o serviço Bluetooth padrão de bateria (mais confiável) ao conectar. Se os óculos não expuserem esse serviço, cai pro comando customizado — que nos testes de 27/07 só devolveu ACK genérico, sem % real (o que parecia funcionar antes era um bug lendo o byte errado do pacote — corrigido).
     </div>
     <button class="btn-ghost" onclick="consultarBateria()">🔋 Testar comando de bateria</button>
   </div>
@@ -749,7 +749,7 @@ async function conectarBluetooth() {
   try {
     const device = await navigator.bluetooth.requestDevice({
       filters: [{ namePrefix: YJ02.NAME_PREFIX }],
-      optionalServices: [YJ02.SERVICE]
+      optionalServices: [YJ02.SERVICE, 'battery_service', 'device_information']
     });
     S.btDevice = device;
     device.addEventListener('gattserverdisconnected', onDisconnect);
@@ -772,7 +772,13 @@ async function conectarBluetooth() {
     }
     atualizarUI();
 
-    // Query bateria inicial
+    // Serviços GATT padrão (Battery Service / Device Information) — mais confiáveis
+    // que os comandos customizados, que no protocolo YJ02 parecem não reconhecer
+    // nenhum dos opcodes de bateria/armazenamento testados até agora.
+    tentarServicosPadrao();
+
+    // Também tenta o comando customizado de bateria (mantido por compatibilidade,
+    // mas nos testes reais ele só retorna ACK genérico, sem % de fato).
     setTimeout(() => enviarComando(YJ02.CMD.BATTERY), 800);
 
   } catch(err) {
@@ -1126,7 +1132,7 @@ function atualizarFallbackLinks() {
 // ══════════════════════════════════════════════════════
 // DISPOSITIVO — bateria / espaço / limpar cache
 // ══════════════════════════════════════════════════════
-function updateBatteryUI(bat) {
+function updateBatteryUI(bat, source) {
   S.battery = bat;
   const cls = bat > 30 ? 'ok' : 'warn';
   const fillCls = bat > 30 ? '' : (bat > 15 ? 'warn' : 'danger');
@@ -1136,12 +1142,82 @@ function updateBatteryUI(bat) {
   fill.style.width = bat + '%';
   fill.className = 'battery-fill' + (fillCls ? ' ' + fillCls : '');
   document.getElementById('dev-bat-pct').textContent = bat + '%';
+  const badge = document.getElementById('bat-badge');
+  if (badge) {
+    badge.textContent = source || 'OK';
+    badge.className = 'badge badge-ok';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SERVIÇOS GATT PADRÃO (Battery Service 0x180F, Device Information 0x180A)
+// Muitos periféricos BLE expõem esses serviços padrão além do protocolo
+// customizado. Se o YJ02 tiver isso, é uma leitura confiável — bem melhor
+// que ficar adivinhando opcodes customizados que não respondem com dado real.
+// ══════════════════════════════════════════════════════
+async function tentarServicosPadrao() {
+  // Battery Service
+  try {
+    const batSvc = await S.btServer.getPrimaryService('battery_service');
+    const batChar = await batSvc.getCharacteristic('battery_level');
+    S.batteryChar = batChar;
+    const val = await batChar.readValue();
+    const pct = val.getUint8(0);
+    updateBatteryUI(pct, 'GATT PADRÃO');
+    logDebug('sys', '✓ Battery Service padrão encontrado: ' + pct + '%');
+    // Se o periférico suportar notify nesse characteristic, acompanha em tempo real
+    if (batChar.properties.notify) {
+      await batChar.startNotifications();
+      batChar.addEventListener('characteristicvaluechanged', (e) => {
+        updateBatteryUI(e.target.value.getUint8(0), 'GATT PADRÃO');
+      });
+    }
+  } catch (e) {
+    logDebug('sys', 'Battery Service padrão não encontrado (' + e.message + ') — óculos não expõem esse serviço BLE padrão');
+  }
+
+  // Device Information Service
+  try {
+    const diSvc = await S.btServer.getPrimaryService('device_information');
+    const fields = [
+      ['manufacturer_name_string', 'Fabricante'],
+      ['model_number_string', 'Modelo'],
+      ['serial_number_string', 'Serial'],
+      ['firmware_revision_string', 'Firmware'],
+      ['hardware_revision_string', 'Hardware'],
+    ];
+    for (const [uuid, label] of fields) {
+      try {
+        const ch = await diSvc.getCharacteristic(uuid);
+        const val = await ch.readValue();
+        const text = new TextDecoder().decode(val);
+        logDebug('sys', 'Device Info · ' + label + ': ' + text);
+        if (uuid === 'firmware_revision_string' && text) {
+          document.getElementById('cfg-fw').textContent = text;
+        }
+        if (uuid === 'serial_number_string' && text) {
+          logDebug('sys', 'Serial pode ser útil como identificador único: ' + text);
+        }
+      } catch (e2) { /* característica específica ausente — normal, ignora */ }
+    }
+  } catch (e) {
+    logDebug('sys', 'Device Information Service padrão não encontrado (' + e.message + ')');
+  }
 }
 
 async function consultarBateria() {
   if (S.btStatus !== 'connected') { showToast('Conecte os óculos primeiro', 'warn'); return; }
+  // Prioriza o serviço GATT padrão se já identificado
+  if (S.batteryChar) {
+    try {
+      const val = await S.batteryChar.readValue();
+      updateBatteryUI(val.getUint8(0), 'GATT PADRÃO');
+      showToast('🔋 Bateria atualizada (GATT padrão)', 'ok');
+      return;
+    } catch (e) { /* cai para o comando customizado */ }
+  }
   await enviarComando(YJ02.CMD.BATTERY);
-  showToast('Consultando bateria…', 'warn');
+  showToast('Consultando bateria (comando customizado — experimental)…', 'warn');
 }
 
 async function consultarEspaco() {
