@@ -392,6 +392,8 @@ body{
       </div>
       <button class="copy-btn" onclick="copiar(YJ02.WIFI_PASS)">COPIAR</button>
     </div>
+    <div id="wifi-timer" style="display:none;font-size:10px;color:var(--azulT);letter-spacing:.5px;margin-top:8px;"></div>
+    <div style="font-size:10px;color:var(--azulT);letter-spacing:.5px;margin-top:8px;line-height:1.5;">⚡ Troque para essa rede rápido — o modo Wi-Fi dos óculos pode desligar sozinho depois de um tempo curto.</div>
   </div>
 
   <button class="btn btn-verde" id="btn-fetch" style="display:none;" onclick="buscarArquivos()">
@@ -443,7 +445,7 @@ body{
       <div class="battery-pct" id="dev-bat-pct">—</div>
     </div>
     <div class="card-hint" style="margin-top:6px;">
-      O app agora tenta primeiro o serviço Bluetooth padrão de bateria (mais confiável) ao conectar. Se os óculos não expuserem esse serviço, cai pro comando customizado — que nos testes de 27/07 só devolveu ACK genérico, sem % real (o que parecia funcionar antes era um bug lendo o byte errado do pacote — corrigido).
+      Testado em 27/07: este YJ02 <strong style="color:var(--text)">não expõe</strong> o Battery Service padrão do Bluetooth. O comando customizado (02 01 03) sempre volta um sentinela "sem dado" (FF FF), de forma consistente em várias conexões — não parece ser só falta de sorte. Provavelmente esse firmware não expõe bateria por BLE, ou usa um comando bem diferente do que já tentamos. Próximo passo real: capturar o tráfego do app oficial (PCAPdroid/nRF Connect) no momento em que ele mostra a bateria na tela.
     </div>
     <button class="btn-ghost" onclick="consultarBateria()">🔋 Testar comando de bateria</button>
   </div>
@@ -458,7 +460,7 @@ body{
       <span class="status-val" id="dev-storage">Não consultado</span>
     </div>
     <div class="card-hint" style="margin-top:10px;">
-      O protocolo do YJ02 não tem um comando de espaço/armazenamento confirmado ainda. Testes mostraram que 02 01 07/08/09 provavelmente não são reconhecidos (ACK genérico); 02 01 05 se comporta diferente e é o candidato mais promissor. Este botão testa os candidatos e mostra a resposta crua no console (aba AVANÇADO) pra você ajudar a decifrar o formato.
+      Testado em 27/07 (duas conexões separadas): 02 01 07 / 08 / 09 sempre voltam a <strong style="color:var(--text)">mesma</strong> resposta genérica (FF 05), idêntica pros três comandos diferentes — isso é o padrão clássico de "comando não reconhecido caindo num handler genérico", não de dados reais variando por tipo de consulta. São praticamente descartados. O frame BC 73 08 que aparece às vezes também sempre traz o mesmo payload fixo, então também não parece ser espaço/armazenamento. Sem um comando confirmado, a forma confiável de achar o certo é capturar o tráfego do app oficial mostrando o armazenamento na tela.
     </div>
     <button class="btn-ghost" onclick="consultarEspaco()">📦 Tentar consultar espaço</button>
   </div>
@@ -487,6 +489,10 @@ body{
     <div class="status-row">
       <span class="status-key">FIRMWARE</span>
       <span class="status-val" id="cfg-fw">A02S_1.00.17</span>
+    </div>
+    <div class="status-row">
+      <span class="status-key">HARDWARE</span>
+      <span class="status-val" id="cfg-hw">—</span>
     </div>
     <div class="status-row">
       <span class="status-key">IP WI-FI</span>
@@ -839,6 +845,25 @@ function onNotify(event) {
     document.getElementById('cfg-ip').textContent = ip;
     atualizarFallbackLinks();
     console.log('[FranCap] IP dos óculos:', ip);
+  }
+
+  // BC-73-03: um contador que aparece depois de ativar o Wi-Fi/AP e vai diminuindo
+  // com o tempo (visto em logs reais: 81→80→79... a cada ~9s). Ainda não confirmado
+  // o que é exatamente, mas o padrão sugere um timer — possivelmente o tempo
+  // restante antes do AP desligar sozinho. Mostramos como referência, sem afirmar.
+  if (cmd === 0x73 && bytes[2] === 0x03) {
+    const payload = bytes.slice(6);
+    if (payload[0] === 0x05 && payload.length >= 2) {
+      const val = payload[1];
+      const el = document.getElementById('wifi-timer');
+      if (el) {
+        el.textContent = 'Contador interno dos óculos: ' + val + ' (pode indicar o tempo restante do modo Wi-Fi — não confirmado)';
+        el.style.display = 'block';
+      }
+      if (val <= 10) {
+        showToast('⚠️ O Wi-Fi dos óculos pode estar prestes a desligar — conecte rápido!', 'warn');
+      }
+    }
   }
 
   // BC-73-08: frame de 8 bytes que aparece após "02 01 05" — conteúdo ainda
@@ -1194,6 +1219,9 @@ async function tentarServicosPadrao() {
         logDebug('sys', 'Device Info · ' + label + ': ' + text);
         if (uuid === 'firmware_revision_string' && text) {
           document.getElementById('cfg-fw').textContent = text;
+        }
+        if (uuid === 'hardware_revision_string' && text) {
+          document.getElementById('cfg-hw').textContent = text;
         }
         if (uuid === 'serial_number_string' && text) {
           logDebug('sys', 'Serial pode ser útil como identificador único: ' + text);
