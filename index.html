@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FranCap">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>FRAN.CAP · Óculos</title>
 <style>
 :root {
@@ -69,16 +72,18 @@ body{
 /* TABS */
 .tabs{display:flex;background:var(--sf);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
-.tab{flex:1;min-width:0;padding:11px 8px;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.tab{flex:1;min-width:64px;padding:11px 6px;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
 .tab.active{color:var(--verdeT);border-bottom-color:var(--verde);}
 .tab-content{display:none;padding:16px;}
 .tab-content.active{display:block;}
 
 /* SECTION LABEL */
-.slabel{font-size:9px;color:var(--muted);letter-spacing:2.5px;margin-bottom:10px;}
+.slabel{font-size:9px;color:var(--muted);letter-spacing:2.5px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
 
 /* CARDS */
 .card{background:var(--sf);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.card-title{font-size:12px;color:var(--text);letter-spacing:.5px;font-weight:600;margin-bottom:4px;}
+.card-hint{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
 
 /* CHIPS */
 .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
@@ -104,6 +109,7 @@ body{
 .btn-verde{background:var(--verdeD);border:1px solid var(--verde);color:var(--verdeT);}
 .btn-terra{background:var(--terraD);border:1px solid var(--terra);color:var(--terraT);}
 .btn-azul{background:var(--azulD);border:1px solid var(--azul);color:var(--azulT);}
+.btn-danger{background:#2a1010;border:1px solid var(--danger);color:#f08080;}
 .btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
 .btn-sm{
   padding:13px 12px;border:1px solid var(--border2);border-radius:var(--r);
@@ -114,19 +120,39 @@ body{
 .btn-sm:active{transform:scale(.96);}
 .btn-sm:disabled{opacity:.35;cursor:not-allowed;}
 .btn-sm span:first-child{font-size:22px;}
+.btn-ghost{
+  width:100%;padding:11px;background:transparent;border:1px solid var(--border2);
+  color:var(--muted);border-radius:var(--r);font-family:inherit;font-size:11px;
+  font-weight:700;letter-spacing:1px;cursor:pointer;
+}
 
 /* STATUS PANEL */
 .status-panel{
   background:var(--sf2);border:1px solid var(--border);border-radius:var(--r);
   padding:12px 14px;margin-bottom:12px;
 }
-.status-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:1px;}
+.status-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:1px;gap:10px;}
 .status-row+.status-row{margin-top:7px;padding-top:7px;border-top:1px solid var(--border);}
-.status-key{color:var(--muted);}
-.status-val{color:var(--text);font-weight:600;}
+.status-key{color:var(--muted);flex-shrink:0;}
+.status-val{color:var(--text);font-weight:600;text-align:right;}
 .status-val.ok{color:var(--ok);}
 .status-val.warn{color:var(--warn);}
 .status-val.terra{color:var(--terraT);}
+.status-input{
+  background:transparent;border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);font-family:inherit;font-size:11px;font-weight:600;
+  padding:5px 8px;text-align:right;width:150px;max-width:52vw;
+}
+.status-input:focus{outline:none;border-color:var(--verde);}
+
+/* BATTERY GAUGE */
+.battery-wrap{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.battery-shell{flex:1;height:22px;border:2px solid var(--border2);border-radius:5px;position:relative;padding:2px;}
+.battery-shell::after{content:'';position:absolute;right:-5px;top:6px;width:3px;height:8px;background:var(--border2);border-radius:0 2px 2px 0;}
+.battery-fill{height:100%;border-radius:2px;background:var(--ok);width:0%;transition:width .5s;}
+.battery-fill.warn{background:var(--warn);}
+.battery-fill.danger{background:var(--danger);}
+.battery-pct{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;width:56px;text-align:right;}
 
 /* PROGRESS BAR */
 .progress-wrap{margin-top:10px;}
@@ -158,12 +184,13 @@ body{
 .cap-type{font-size:17px;flex-shrink:0;}
 .cap-info{flex:1;}
 .cap-proj{font-size:9px;letter-spacing:1.5px;padding:1px 6px;border-radius:3px;margin-bottom:4px;display:inline-block;}
-.cap-proj.instagram{color:var(--terraT);background:var(--terraD);border:1px solid var(--terra)40;}
-.cap-proj.due{color:#b09060;background:#2a1e08;border:1px solid #8b735540;}
-.cap-proj.eatlooper{color:var(--verdeT);background:var(--verdeD);border:1px solid var(--verde)40;}
-.cap-proj.sensi{color:var(--azulT);background:var(--azulD);border:1px solid var(--azul)40;}
+.cap-proj.instagram{color:var(--terraT);background:var(--terraD);border:1px solid var(--terra);}
+.cap-proj.due{color:#b09060;background:#2a1e08;border:1px solid #8b7355;}
+.cap-proj.eatlooper{color:var(--verdeT);background:var(--verdeD);border:1px solid var(--verde);}
+.cap-proj.sensi{color:var(--azulT);background:var(--azulD);border:1px solid var(--azul);}
 .cap-tag{font-size:10px;color:var(--muted);}
 .cap-time{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.cap-del{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px;flex-shrink:0;}
 
 /* WIFI BOX */
 .wifi-box{
@@ -187,8 +214,10 @@ body{
 .modal-bg.show{display:flex;}
 .modal{background:var(--sf);border:1px solid var(--border2);border-radius:20px;padding:24px;width:100%;max-width:420px;}
 .modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--verde);margin-bottom:8px;}
+.modal-title.danger{color:var(--danger);}
 .modal-sub{font-size:12px;color:var(--muted);letter-spacing:.5px;line-height:1.6;margin-bottom:20px;}
 .modal-btn{width:100%;padding:14px;background:var(--verdeD);border:1px solid var(--verde);color:var(--verdeT);border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:700;letter-spacing:1.5px;cursor:pointer;margin-bottom:8px;}
+.modal-btn.danger{background:#2a1010;border-color:var(--danger);color:#f08080;}
 .modal-btn-sec{width:100%;padding:12px;background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:var(--r);font-family:inherit;font-size:12px;cursor:pointer;}
 
 /* TOAST */
@@ -201,11 +230,30 @@ body{
 /* BADGE */
 .badge{display:inline-block;font-size:9px;letter-spacing:1px;padding:2px 7px;border-radius:10px;font-weight:700;}
 .badge-ok{background:var(--verdeD);color:var(--verdeT);border:1px solid var(--verde);}
-.badge-warn{background:#2a1e00;color:var(--warn);border:1px solid var(--warn)40;}
+.badge-warn{background:#2a1e00;color:var(--warn);border:1px solid var(--warn);}
+.badge-muted{background:var(--sf2);color:var(--muted);border:1px solid var(--border2);}
 
 .empty{text-align:center;color:var(--muted);padding:32px;font-size:12px;letter-spacing:.5px;line-height:2;}
 .divider{height:1px;background:var(--border);margin:14px 0;}
 .row{display:flex;justify-content:space-between;align-items:center;}
+.link-txt{background:none;border:none;color:var(--azulT);font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;text-decoration:underline;padding:0;}
+
+/* DEBUG CONSOLE */
+.debug-console{
+  background:#000;border:1px solid var(--border2);border-radius:8px;
+  padding:10px;height:180px;overflow-y:auto;font-size:10px;line-height:1.6;
+  color:#7fd88f;white-space:pre-wrap;word-break:break-all;
+}
+.debug-console .rx{color:#7fd88f;}
+.debug-console .tx{color:#e6a020;}
+.debug-console .sys{color:#6b665e;}
+.debug-row{display:flex;gap:8px;margin-top:8px;}
+.debug-input{
+  flex:1;background:var(--sf2);border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);font-family:inherit;font-size:11px;padding:9px 10px;letter-spacing:1px;
+}
+.debug-input:focus{outline:none;border-color:var(--azul);}
+.debug-send{background:var(--azulD);border:1px solid var(--azul);color:var(--azulT);border-radius:6px;padding:0 14px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -214,7 +262,7 @@ body{
 <div class="header">
   <div>
     <div class="logo">FRAN.CAP</div>
-    <div class="logo-sub">CAPTAÇÃO v1.0</div>
+    <div class="logo-sub">CAPTAÇÃO v1.1</div>
   </div>
   <button class="bt-pill" id="bt-pill" onclick="toggleBluetooth()">
     <span class="bt-dot" id="bt-dot"></span>
@@ -226,8 +274,9 @@ body{
 <nav class="tabs">
   <div class="tab active" id="tab-btn-captura" onclick="showTab('captura')">CAPTURA</div>
   <div class="tab" id="tab-btn-importar" onclick="showTab('importar')">IMPORTAR</div>
+  <div class="tab" id="tab-btn-device" onclick="showTab('device')">ÓCULOS</div>
   <div class="tab" id="tab-btn-log" onclick="showTab('log')">SESSÃO</div>
-  <div class="tab" id="tab-btn-config" onclick="showTab('config')">CONFIG</div>
+  <div class="tab" id="tab-btn-avancado" onclick="showTab('avancado')">AVANÇADO</div>
 </nav>
 
 <main>
@@ -236,7 +285,7 @@ body{
 <div class="tab-content active" id="tab-captura">
 
   <div class="card">
-    <div class="slabel">PROJETO</div>
+    <div class="slabel"><span>PROJETO</span></div>
     <div class="chips" id="chips-projeto">
       <button class="chip active-terra" data-proj="instagram" onclick="setProj('instagram',this)">Instagram</button>
       <button class="chip" data-proj="due" onclick="setProj('due',this)">DUE</button>
@@ -244,7 +293,7 @@ body{
       <button class="chip" data-proj="sensi" onclick="setProj('sensi',this)">Sensi</button>
     </div>
 
-    <div class="slabel">TAG</div>
+    <div class="slabel"><span>TAG</span></div>
     <div class="chips" id="chips-tag">
       <button class="chip" data-tag="Empratamento" onclick="setTag('Empratamento',this)">Empratamento</button>
       <button class="chip" data-tag="Dança" onclick="setTag('Dança',this)">Dança</button>
@@ -302,7 +351,7 @@ body{
 <div class="tab-content" id="tab-importar">
 
   <div class="card">
-    <div class="slabel">COMO FUNCIONA</div>
+    <div class="slabel"><span>COMO FUNCIONA</span></div>
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-text">Conecte os óculos pelo botão <strong>ÓCULOS OFF</strong> no topo</div>
@@ -339,9 +388,9 @@ body{
     <div class="wifi-row">
       <div>
         <div class="wifi-label">SENHA</div>
-        <div class="wifi-val">123456789</div>
+        <div class="wifi-val" id="wifi-pass">123456789</div>
       </div>
-      <button class="copy-btn" onclick="copiar('123456789')">COPIAR</button>
+      <button class="copy-btn" onclick="copiar(YJ02.WIFI_PASS)">COPIAR</button>
     </div>
   </div>
 
@@ -364,14 +413,80 @@ body{
 
   <!-- Fallback: browser aberto -->
   <div id="fallback-box" style="display:none;" class="card">
-    <div class="slabel">ACESSO DIRETO</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px;">
-      Se o download automático falhar (restrição HTTPS), abra o link abaixo manualmente no Chrome após conectar ao Wi-Fi dos óculos:
+    <div class="slabel"><span>ACESSO DIRETO</span></div>
+    <div class="card-hint">
+      O download automático pode falhar por restrição de conteúdo misto (HTTPS→HTTP) ou porque o firmware dos óculos não libera CORS. Abra o link abaixo manualmente no Chrome, já conectado ao Wi-Fi dos óculos — isso funciona mesmo sem nenhuma configuração extra:
     </div>
-    <button class="btn-sm" style="width:100%;text-align:center;" onclick="abrirGaleria()">
+    <button class="btn-sm" style="width:100%;text-align:center;margin-bottom:6px;" onclick="abrirLink('/')">
       <span>🌐</span>
-      <span>http://192.168.49.208/</span>
+      <span id="fb-root-url">http://192.168.49.208/</span>
     </button>
+    <button class="btn-sm" style="width:100%;text-align:center;" onclick="abrirLink('/files/')">
+      <span>📁</span>
+      <span id="fb-files-url">http://192.168.49.208/files/</span>
+    </button>
+    <div class="card-hint" style="margin-top:10px;margin-bottom:0;">Quer que o download automático funcione? Veja <strong>AVANÇADO → Corrigir conteúdo misto</strong>. Isso resolve o bloqueio de HTTPS, mas se os óculos não enviarem cabeçalhos CORS o fetch direto continuará falhando — a abertura manual acima sempre funciona como alternativa.</div>
+  </div>
+
+</div>
+
+<!-- TAB: DISPOSITIVO (ÓCULOS) -->
+<div class="tab-content" id="tab-device">
+
+  <div class="card">
+    <div class="slabel"><span>BATERIA</span></div>
+    <div class="battery-wrap">
+      <div class="battery-shell"><div class="battery-fill" id="dev-bat-fill"></div></div>
+      <div class="battery-pct" id="dev-bat-pct">—</div>
+    </div>
+    <button class="btn-ghost" onclick="consultarBateria()">🔋 Atualizar bateria</button>
+  </div>
+
+  <div class="card">
+    <div class="slabel">
+      <span>ESPAÇO INTERNO</span>
+      <span class="badge badge-warn">EXPERIMENTAL</span>
+    </div>
+    <div class="status-row">
+      <span class="status-key">STATUS</span>
+      <span class="status-val" id="dev-storage">Não consultado</span>
+    </div>
+    <div class="card-hint" style="margin-top:10px;">
+      O protocolo do YJ02 não tem um comando de espaço/armazenamento confirmado ainda. Este botão testa alguns opcodes candidatos e mostra a resposta crua no console (aba AVANÇADO) para você ajudar a identificar o comando certo.
+    </div>
+    <button class="btn-ghost" onclick="consultarEspaco()">📦 Tentar consultar espaço</button>
+  </div>
+
+  <div class="card">
+    <div class="slabel">
+      <span>LIMPAR CACHE / FORMATAR</span>
+      <span class="badge badge-warn">EXPERIMENTAL</span>
+    </div>
+    <div class="card-hint">
+      Comando não confirmado oficialmente — pode não fazer nada, ou pode apagar arquivos dos óculos. Só use se souber o que está fazendo e, de preferência, com os arquivos já importados.
+    </div>
+    <button class="btn-danger btn" style="font-size:14px;padding:12px;" onclick="abrirModalLimpar()">🗑️ Tentar limpar cache</button>
+  </div>
+
+  <div class="card">
+    <div class="slabel"><span>IDENTIFICAÇÃO</span></div>
+    <div class="status-row">
+      <span class="status-key">NOME (BLE)</span>
+      <input class="status-input" id="cfg-devname" value="YJ02_ACD2" oninput="onDeviceInfoChange()">
+    </div>
+    <div class="status-row">
+      <span class="status-key">MAC</span>
+      <input class="status-input" id="cfg-mac" value="48:10:42:43:AC:D2" oninput="onDeviceInfoChange()">
+    </div>
+    <div class="status-row">
+      <span class="status-key">FIRMWARE</span>
+      <span class="status-val" id="cfg-fw">A02S_1.00.17</span>
+    </div>
+    <div class="status-row">
+      <span class="status-key">IP WI-FI</span>
+      <span class="status-val" id="cfg-ip">192.168.49.208</span>
+    </div>
+    <div class="card-hint" style="margin-top:10px;margin-bottom:0;">O nome e o MAC não são lidos automaticamente pelo Web Bluetooth (o Android esconde o MAC real por privacidade). Edite aqui se mudar de óculos — isso também atualiza a rede Wi-Fi mostrada em IMPORTAR.</div>
   </div>
 
 </div>
@@ -385,35 +500,27 @@ body{
   <div id="log-lista">
     <div class="empty">Nenhuma captura ainda.<br>Conecte os óculos e comece.</div>
   </div>
+  <button class="btn-ghost" id="btn-clear-log" style="display:none;margin-top:8px;" onclick="limparSessao()">Limpar histórico da sessão</button>
 </div>
 
-<!-- TAB: CONFIG -->
-<div class="tab-content" id="tab-config">
+<!-- TAB: AVANÇADO -->
+<div class="tab-content" id="tab-avancado">
 
   <div class="card">
-    <div class="slabel">DISPOSITIVO</div>
-    <div class="status-row">
-      <span class="status-key">DEVICE NAME</span>
-      <span class="status-val" id="cfg-devname">YJ02_ACD2</span>
+    <div class="slabel"><span>CONSOLE BLE (DEBUG)</span></div>
+    <div class="card-hint">Log cru de tudo que entra e sai pela conexão Bluetooth — útil pra descobrir novos comandos comparando com o app oficial + PCAPdroid.</div>
+    <div class="debug-console" id="debug-console"><span class="sys">Aguardando conexão…</span></div>
+    <div class="debug-row">
+      <input class="debug-input" id="debug-cmd" placeholder="ex: 02 01 07 (hex do payload)">
+      <button class="debug-send" onclick="enviarComandoCustom()">TX</button>
     </div>
-    <div class="status-row">
-      <span class="status-key">MAC</span>
-      <span class="status-val" id="cfg-mac">48:10:42:43:AC:D2</span>
-    </div>
-    <div class="status-row">
-      <span class="status-key">FIRMWARE</span>
-      <span class="status-val" id="cfg-fw">A02S_1.00.17</span>
-    </div>
-    <div class="status-row">
-      <span class="status-key">IP WI-FI</span>
-      <span class="status-val" id="cfg-ip">192.168.49.208</span>
-    </div>
+    <button class="btn-ghost" style="margin-top:8px;" onclick="limparDebugLog()">Limpar console</button>
   </div>
 
   <div class="card">
-    <div class="slabel">CORREÇÃO: MIXED CONTENT (1x)</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px;">
-      Para o download automático funcionar via HTTPS, faça isso <strong style="color:var(--text)">uma única vez</strong>:
+    <div class="slabel"><span>CORRIGIR CONTEÚDO MISTO (1x)</span></div>
+    <div class="card-hint">
+      Para o download automático em IMPORTAR ter mais chance de funcionar via HTTPS, faça isso <strong style="color:var(--text)">uma única vez</strong>:
     </div>
     <div class="step">
       <div class="step-num">1</div>
@@ -429,13 +536,13 @@ body{
     </div>
     <div class="step">
       <div class="step-num">4</div>
-      <div class="step-text">Toque em <strong>Relaunch</strong> e pronto — nunca mais precisará fazer isso</div>
+      <div class="step-text">Toque em <strong>Relaunch</strong> — só precisa fazer isso uma vez</div>
     </div>
-    <button class="modal-btn" style="margin-top:8px;" onclick="abrirFlags()">Abrir chrome://flags agora</button>
+    <button class="modal-btn" style="margin-top:8px;" onclick="abrirFlags()">Copiar chrome://flags</button>
   </div>
 
   <div class="card">
-    <div class="slabel">PROTOCOLO BLE CONFIRMADO</div>
+    <div class="slabel"><span>PROTOCOLO BLE CONFIRMADO</span></div>
     <div class="status-row">
       <span class="status-key">SERVICE</span>
       <span class="status-val" style="font-size:9px;">de5bf728-...</span>
@@ -458,9 +565,8 @@ body{
     </div>
   </div>
 
-  <div style="text-align:center;font-size:9px;color:var(--muted);letter-spacing:1.5px;padding:20px;">
-    FRAN.CAP v1.0 · PILOTO PESSOAL · 2026<br>
-    Decifrado via jadx + nRF Connect + PCAPdroid
+  <div style="text-align:center;font-size:9px;color:var(--muted);letter-spacing:1.5px;padding:16px;">
+    FRAN.CAP v1.1 · Decifrado via jadx + nRF Connect + PCAPdroid
   </div>
 </div>
 
@@ -475,7 +581,19 @@ body{
       Ligue o <strong>YJ02</strong> e selecione na lista.
     </div>
     <button class="modal-btn" onclick="conectarBluetooth()">Buscar YJ02</button>
-    <button class="modal-btn-sec" onclick="fecharModal()">Cancelar</button>
+    <button class="modal-btn-sec" onclick="fecharModal('modal-bt')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL LIMPAR CACHE -->
+<div class="modal-bg" id="modal-limpar">
+  <div class="modal">
+    <div class="modal-title danger">LIMPAR CACHE?</div>
+    <div class="modal-sub">
+      Isso envia um comando <strong>experimental</strong> e não confirmado para os óculos. Ele pode não fazer nada — ou pode apagar fotos/vídeos que ainda não foram importados. Confirme só se já importou tudo que precisa.
+    </div>
+    <button class="modal-btn danger" onclick="confirmarLimparCache()">Enviar comando mesmo assim</button>
+    <button class="modal-btn-sec" onclick="fecharModal('modal-limpar')">Cancelar</button>
   </div>
 </div>
 
@@ -493,7 +611,7 @@ const YJ02 = {
   NOTIFY:   'de5bf729-d711-4e47-af26-65e3012a5dc7',
   CMD_TYPE: 0x41,
 
-  // Payloads dos comandos (glassesControl)
+  // Payloads dos comandos (glassesControl) — confirmados via engenharia reversa
   CMD: {
     AP_IMPORT:  [0x02, 0x01, 0x04, 0x02],  // ativar AP Wi-Fi + importar
     P2P_IMPORT: [0x02, 0x01, 0x04, 0x01],  // P2P Wi-Fi (alternativo)
@@ -502,11 +620,28 @@ const YJ02 = {
     BATTERY:    [0x02, 0x01, 0x03],        // query bateria
   },
 
+  // Candidatos NÃO confirmados — testados via botão "experimental" na aba ÓCULOS
+  EXPERIMENTAL: {
+    STORAGE_TRY: [
+      [0x02, 0x01, 0x07],
+      [0x02, 0x01, 0x08],
+      [0x02, 0x01, 0x09],
+      [0x02, 0x01, 0x05],
+    ],
+    CLEAR_CACHE_TRY: [
+      [0x02, 0x01, 0x04, 0x03],
+      [0x02, 0x05],
+    ],
+  },
+
   // HTTP
   IP:      '192.168.49.208',
   PORT:    80,
   WIFI_SSID: 'YJ02_48104243ACD2',
   WIFI_PASS: '123456789',
+
+  // Endpoints candidatos para listar arquivos (tentados em ordem)
+  LIST_ENDPOINTS: ['/files/media.config', '/files/vf_list.txt', '/files/', '/DCIM/', '/'],
 };
 
 // ══════════════════════════════════════════════════════
@@ -526,6 +661,9 @@ const S = {
   captures:  [],
   files:     [],
 };
+
+const STORAGE_KEY_CAPTURES = 'francap_captures_v1';
+const STORAGE_KEY_DEVICE   = 'francap_device_v1';
 
 // ══════════════════════════════════════════════════════
 // CRC16-IBM (decifrado do APK HeyCyan)
@@ -563,6 +701,18 @@ function glassesControl(cmdBytes) {
   return buildPacket(YJ02.CMD_TYPE, cmdBytes);
 }
 
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ').toUpperCase();
+}
+
+function hexToBytes(hex) {
+  const clean = hex.replace(/[^0-9a-fA-F]/g, '');
+  if (!clean.length || clean.length % 2 !== 0) return null;
+  const out = [];
+  for (let i = 0; i < clean.length; i += 2) out.push(parseInt(clean.substr(i, 2), 16));
+  return out;
+}
+
 // ══════════════════════════════════════════════════════
 // BLUETOOTH
 // ══════════════════════════════════════════════════════
@@ -579,12 +729,12 @@ function toggleBluetooth() {
   document.getElementById('modal-bt').classList.add('show');
 }
 
-function fecharModal() {
-  document.getElementById('modal-bt').classList.remove('show');
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('show');
 }
 
 async function conectarBluetooth() {
-  fecharModal();
+  fecharModal('modal-bt');
   setBtStatus('connecting');
   try {
     const device = await navigator.bluetooth.requestDevice({
@@ -605,6 +755,11 @@ async function conectarBluetooth() {
 
     setBtStatus('connected', device.name || 'YJ02');
     showToast('✓ Óculos conectado: ' + (device.name || 'YJ02'), 'ok');
+    logDebug('sys', 'Conectado a ' + (device.name || 'YJ02'));
+    if (device.name) {
+      document.getElementById('cfg-devname').value = device.name;
+      onDeviceInfoChange();
+    }
     atualizarUI();
 
     // Query bateria inicial
@@ -621,6 +776,7 @@ function onDisconnect() {
   S.writeChar = null; S.notifyChar = null;
   setBtStatus('off');
   showToast('Óculos desconectado', 'warn');
+  logDebug('sys', 'Desconectado');
   atualizarUI();
 }
 
@@ -628,6 +784,7 @@ async function enviarComando(cmdBytes) {
   if (!S.writeChar) { showToast('Óculos não conectado', 'warn'); return false; }
   try {
     const pkt = glassesControl(Array.from(cmdBytes));
+    logDebug('tx', bytesToHex(pkt));
     if (S.writeChar.properties.writeWithoutResponse) {
       await S.writeChar.writeValueWithoutResponse(pkt);
     } else {
@@ -636,8 +793,17 @@ async function enviarComando(cmdBytes) {
     return true;
   } catch(e) {
     showToast('Erro BLE: ' + e.message, 'error');
+    logDebug('sys', 'Erro TX: ' + e.message);
     return false;
   }
+}
+
+async function enviarComandoCustom() {
+  const input = document.getElementById('debug-cmd');
+  const bytes = hexToBytes(input.value);
+  if (!bytes || !bytes.length) { showToast('Hex inválido — ex: 02 01 07', 'warn'); return; }
+  const ok = await enviarComando(bytes);
+  if (ok) showToast('Comando enviado — veja a resposta no console', 'ok');
 }
 
 // ══════════════════════════════════════════════════════
@@ -645,6 +811,7 @@ async function enviarComando(cmdBytes) {
 // ══════════════════════════════════════════════════════
 function onNotify(event) {
   const bytes = new Uint8Array(event.target.value.buffer);
+  logDebug('rx', bytesToHex(bytes));
   if (!bytes.length || bytes[0] !== 0xBC) return;
 
   const cmd = bytes[1];
@@ -652,9 +819,7 @@ function onNotify(event) {
   // BC-73-08: Bateria (byte[4] = %)
   if (cmd === 0x73 && bytes[2] === 0x08) {
     const bat = bytes[4];
-    S.battery = bat;
-    document.getElementById('st-bat').textContent = bat + '%';
-    document.getElementById('st-bat').className = 'status-val ' + (bat > 30 ? 'ok' : 'warn');
+    updateBatteryUI(bat);
   }
 
   // BC-73-05: IP Wi-Fi dos óculos
@@ -662,6 +827,7 @@ function onNotify(event) {
     const ip = `${bytes[7]}.${bytes[8]}.${bytes[9]}.${bytes[10]}`;
     YJ02.IP = ip;
     document.getElementById('cfg-ip').textContent = ip;
+    atualizarFallbackLinks();
     console.log('[FranCap] IP dos óculos:', ip);
   }
 
@@ -755,9 +921,24 @@ function registrarCaptura(tipo) {
     size: tipo === 'photo' ? `~3MB` : tipo === 'video' ? `~40MB` : `~2MB`,
   };
   S.captures.unshift(cap);
+  salvarCapturas();
   renderLog();
   showTab('log');
   setTimeout(() => showTab('captura'), 100);
+}
+
+function removerCaptura(id) {
+  S.captures = S.captures.filter(c => c.id !== id);
+  salvarCapturas();
+  renderLog();
+}
+
+function limparSessao() {
+  if (!S.captures.length) return;
+  S.captures = [];
+  salvarCapturas();
+  renderLog();
+  showToast('Histórico da sessão limpo', 'ok');
 }
 
 // ══════════════════════════════════════════════════════
@@ -783,51 +964,77 @@ async function ativarAPMode() {
   }
 }
 
-async function buscarArquivos() {
-  const url = `http://${YJ02.IP}/files/media.config`;
-  document.getElementById('import-progress').style.display = 'block';
-  setProgress(0, 'Buscando arquivos…');
-
+async function tentarEndpoint(path, timeoutMs) {
+  const url = `http://${YJ02.IP}${path}`;
   try {
-    const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const resp = await fetch(url, { signal: AbortSignal.timeout(timeoutMs || 6000) });
+    if (!resp.ok) return { ok:false, path, reason:'HTTP ' + resp.status };
     const text = await resp.text();
-    setProgress(100, 'Arquivos encontrados!');
-    parseFileList(text);
+    return { ok:true, path, text };
   } catch(e) {
-    console.log('[FranCap] fetch erro:', e.message);
-    // Provavelmente mixed content — mostrar fallback
-    document.getElementById('fallback-box').style.display = 'block';
-    document.getElementById('import-progress').style.display = 'none';
-    showToast('Configure o Chrome flag (aba CONFIG) ou abra manualmente', 'warn');
-    // Tentar vf_list.txt como alternativa
-    tentarVFList();
+    return { ok:false, path, reason: e.name === 'TimeoutError' ? 'timeout' : (e.message || 'erro de rede') };
   }
 }
 
-async function tentarVFList() {
-  try {
-    const resp = await fetch(`http://${YJ02.IP}/files/vf_list.txt`, { signal: AbortSignal.timeout(5000) });
-    if (!resp.ok) return;
-    const text = await resp.text();
-    parseFileList(text);
-  } catch(e) { /* silencioso */ }
+async function buscarArquivos() {
+  document.getElementById('import-progress').style.display = 'block';
+  document.getElementById('fallback-box').style.display = 'none';
+  let lastReason = '';
+  for (let i = 0; i < YJ02.LIST_ENDPOINTS.length; i++) {
+    const path = YJ02.LIST_ENDPOINTS[i];
+    setProgress(Math.round((i / YJ02.LIST_ENDPOINTS.length) * 90), 'Tentando ' + path + '…');
+    const res = await tentarEndpoint(path);
+    if (res.ok) {
+      setProgress(100, 'Arquivos encontrados em ' + path);
+      const found = parseFileList(res.text);
+      if (found) return;
+      // texto veio mas não achamos arquivos reconhecíveis — segue tentando
+      lastReason = 'resposta sem arquivos reconhecíveis em ' + path;
+      continue;
+    }
+    lastReason = res.reason + ' em ' + path;
+  }
+
+  // Todos os endpoints falharam
+  document.getElementById('import-progress').style.display = 'none';
+  document.getElementById('fallback-box').style.display = 'block';
+  atualizarFallbackLinks();
+  const isNetworkErr = /Failed to fetch|erro de rede|NetworkError/i.test(lastReason);
+  showToast(isNetworkErr
+    ? 'Não deu pra buscar automaticamente (rede/CORS/HTTPS) — use o link manual abaixo'
+    : 'Não encontrei arquivos automaticamente (' + lastReason + ') — use o link manual', 'warn');
 }
 
 function parseFileList(text) {
-  // Formato media.config: JSON ou lista de nomes separados por \n
   let files = [];
+
+  // 1) JSON
   try {
     const data = JSON.parse(text);
     files = Array.isArray(data) ? data : (data.files || data.items || []);
   } catch {
-    // Formato texto simples
-    files = text.trim().split(/\r?\n/).filter(l => l.trim());
+    // 2) HTML directory listing (<a href="...">) — comum em servidores embarcados
+    if (/<a\s+[^>]*href=/i.test(text)) {
+      const matches = [...text.matchAll(/href=["']([^"'?]+\.(?:jpg|jpeg|png|mp4|avi|mp3|aac|opus|wav))["']/gi)];
+      files = matches.map(m => decodeURIComponent(m[1].split('/').pop()));
+    } else {
+      // 3) texto simples, um nome por linha
+      files = text.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    }
   }
+
+  // Remove duplicados e entradas que claramente não são arquivo de mídia
+  files = [...new Set(files)].filter(f => {
+    const name = typeof f === 'string' ? f : (f.name || f.fileName || '');
+    return /\.(jpg|jpeg|png|mp4|avi|mp3|aac|opus|wav)$/i.test(name);
+  });
+
+  if (!files.length) return false;
 
   S.files = files;
   renderFileList();
   showToast(files.length + ' arquivo(s) encontrado(s)!', 'ok');
+  return true;
 }
 
 function renderFileList() {
@@ -836,11 +1043,11 @@ function renderFileList() {
     el.innerHTML = '<div class="empty">Nenhum arquivo encontrado</div>';
     return;
   }
-  el.innerHTML = `<div class="slabel" style="margin-top:8px;">ARQUIVOS NOS ÓCULOS (${S.files.length})</div>` +
+  el.innerHTML = `<div class="slabel" style="margin-top:8px;"><span>ARQUIVOS NOS ÓCULOS (${S.files.length})</span></div>` +
     S.files.map(f => {
       const name = typeof f === 'string' ? f : (f.name || f.fileName || String(f));
       const size = typeof f === 'object' ? (f.size ? formatBytes(f.size) : '') : '';
-      const ext = name.split('.').pop().toLowerCase();
+      const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
       const icon = ext === 'mp4' || ext === 'avi' ? '🎬' : ext === 'mp3' || ext === 'aac' || ext === 'opus' ? '🎙️' : '📷';
       return `<div class="file-item">
         <span class="file-icon">${icon}</span>
@@ -875,8 +1082,67 @@ async function baixarArquivo(nome) {
   }
 }
 
-function abrirGaleria() {
-  window.open(`http://${YJ02.IP}/`, '_blank');
+function abrirLink(path) {
+  window.open(`http://${YJ02.IP}${path}`, '_blank');
+}
+
+function atualizarFallbackLinks() {
+  document.getElementById('fb-root-url').textContent = `http://${YJ02.IP}/`;
+  document.getElementById('fb-files-url').textContent = `http://${YJ02.IP}/files/`;
+}
+
+// ══════════════════════════════════════════════════════
+// DISPOSITIVO — bateria / espaço / limpar cache
+// ══════════════════════════════════════════════════════
+function updateBatteryUI(bat) {
+  S.battery = bat;
+  const cls = bat > 30 ? 'ok' : 'warn';
+  const fillCls = bat > 30 ? '' : (bat > 15 ? 'warn' : 'danger');
+  document.getElementById('st-bat').textContent = bat + '%';
+  document.getElementById('st-bat').className = 'status-val ' + cls;
+  const fill = document.getElementById('dev-bat-fill');
+  fill.style.width = bat + '%';
+  fill.className = 'battery-fill' + (fillCls ? ' ' + fillCls : '');
+  document.getElementById('dev-bat-pct').textContent = bat + '%';
+}
+
+async function consultarBateria() {
+  if (S.btStatus !== 'connected') { showToast('Conecte os óculos primeiro', 'warn'); return; }
+  await enviarComando(YJ02.CMD.BATTERY);
+  showToast('Consultando bateria…', 'warn');
+}
+
+async function consultarEspaco() {
+  if (S.btStatus !== 'connected') { showToast('Conecte os óculos primeiro', 'warn'); return; }
+  document.getElementById('dev-storage').textContent = 'Testando comandos…';
+  showToast('Testando comandos experimentais — acompanhe o console em AVANÇADO', 'warn');
+  for (const cmd of YJ02.EXPERIMENTAL.STORAGE_TRY) {
+    await enviarComando(cmd);
+    await sleep(500);
+  }
+  document.getElementById('dev-storage').textContent = 'Ver respostas no console (AVANÇADO)';
+  showTab('avancado');
+}
+
+function abrirModalLimpar() {
+  if (S.btStatus !== 'connected') { showToast('Conecte os óculos primeiro', 'warn'); return; }
+  document.getElementById('modal-limpar').classList.add('show');
+}
+
+async function confirmarLimparCache() {
+  fecharModal('modal-limpar');
+  showToast('Enviando comando experimental de limpeza…', 'warn');
+  for (const cmd of YJ02.EXPERIMENTAL.CLEAR_CACHE_TRY) {
+    await enviarComando(cmd);
+    await sleep(500);
+  }
+  showToast('Comando enviado — confira o console em AVANÇADO', 'ok');
+  showTab('avancado');
+}
+
+function onDeviceInfoChange() {
+  atualizarSSID();
+  salvarDeviceInfo();
 }
 
 // ══════════════════════════════════════════════════════
@@ -918,8 +1184,6 @@ function setProj(proj, el) {
   const map = { instagram:'active-terra', due:'active-gold', eatlooper:'active-verde', sensi:'active-azul' };
   el.className = 'chip ' + (map[proj] || '');
   document.getElementById('st-proj').textContent = el.textContent;
-  // Atualiza SSID com o MAC do dispositivo
-  atualizarSSID();
 }
 
 function setTag(tag, el) {
@@ -938,6 +1202,7 @@ function setTag(tag, el) {
 function renderLog() {
   const el = document.getElementById('log-lista');
   document.getElementById('session-count').textContent = S.captures.length + ' arquivo(s)';
+  document.getElementById('btn-clear-log').style.display = S.captures.length ? 'block' : 'none';
   if (!S.captures.length) {
     el.innerHTML = '<div class="empty">Nenhuma captura ainda.<br>Conecte os óculos e comece.</div>';
     return;
@@ -952,6 +1217,7 @@ function renderLog() {
         <div class="cap-tag">${c.tag || 'sem tag'} · ${c.size}</div>
       </div>
       <span class="cap-time">${c.hora}</span>
+      <button class="cap-del" onclick="removerCaptura(${c.id})" aria-label="Remover">✕</button>
     </div>`).join('');
 }
 
@@ -963,11 +1229,59 @@ function setProgress(pct, txt) {
 
 function atualizarSSID() {
   // SSID = deviceName + '_' + MAC sem dois-pontos
-  const name = document.getElementById('cfg-devname').textContent;
-  const mac  = document.getElementById('cfg-mac').textContent.replace(/:/g,'');
+  const name = document.getElementById('cfg-devname').value.trim();
+  const mac  = document.getElementById('cfg-mac').value.trim().replace(/:/g,'');
   const ssid = name + '_' + mac;
   YJ02.WIFI_SSID = ssid;
   document.getElementById('wifi-ssid').textContent = ssid;
+}
+
+// ══════════════════════════════════════════════════════
+// PERSISTÊNCIA (localStorage)
+// ══════════════════════════════════════════════════════
+function salvarCapturas() {
+  try { localStorage.setItem(STORAGE_KEY_CAPTURES, JSON.stringify(S.captures)); } catch(e) {}
+}
+function carregarCapturas() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CAPTURES);
+    if (raw) S.captures = JSON.parse(raw) || [];
+  } catch(e) {}
+}
+function salvarDeviceInfo() {
+  try {
+    localStorage.setItem(STORAGE_KEY_DEVICE, JSON.stringify({
+      name: document.getElementById('cfg-devname').value,
+      mac:  document.getElementById('cfg-mac').value,
+    }));
+  } catch(e) {}
+}
+function carregarDeviceInfo() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DEVICE);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.name) document.getElementById('cfg-devname').value = d.name;
+    if (d.mac)  document.getElementById('cfg-mac').value = d.mac;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════
+// CONSOLE DE DEBUG
+// ══════════════════════════════════════════════════════
+function logDebug(type, text) {
+  const el = document.getElementById('debug-console');
+  const time = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const prefix = type === 'tx' ? 'TX' : type === 'rx' ? 'RX' : '··';
+  const line = document.createElement('div');
+  line.className = type;
+  line.textContent = `[${time}] ${prefix}  ${text}`;
+  el.appendChild(line);
+  while (el.children.length > 200) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+function limparDebugLog() {
+  document.getElementById('debug-console').innerHTML = '<span class="sys">Console limpo.</span>';
 }
 
 // ══════════════════════════════════════════════════════
@@ -981,7 +1295,8 @@ function copiar(txt) {
 
 function abrirFlags() {
   // Chrome não permite navegar para chrome:// via JS, então instruímos o usuário
-  showToast('Digite chrome://flags na barra de endereço', 'warn');
+  copiar('chrome://flags');
+  showToast('Copiado — cole na barra de endereço do Chrome', 'warn');
 }
 
 function formatBytes(bytes) {
@@ -1002,9 +1317,12 @@ function showToast(msg, type) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Init
+carregarCapturas();
+carregarDeviceInfo();
 atualizarUI();
 renderLog();
 atualizarSSID();
+atualizarFallbackLinks();
 </script>
 </body>
 </html>
